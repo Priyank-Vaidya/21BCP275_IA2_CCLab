@@ -1,0 +1,29 @@
+# Use official Node.js image as base
+FROM node:14 AS build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend source code
+COPY . .
+
+# Build the frontend application
+RUN npm run build
+
+# Use lightweight Nginx image for production
+FROM nginx:alpine
+
+# Copy built frontend files from build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Command to run the frontend server
+CMD ["nginx", "-g", "daemon off;"]
