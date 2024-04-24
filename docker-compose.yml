@@ -9,8 +9,6 @@ services:
   db:
     image: postgres:latest
     restart: always
-    env_file:
-      - .env
     volumes:
       - ./data:/var/lib/postgresql/data
     networks:
@@ -25,8 +23,7 @@ services:
       - "3000:3000"
     depends_on:
       - db
-    env_file:
-      - .env
+
     networks:
       - bridge
 

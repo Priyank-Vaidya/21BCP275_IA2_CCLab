@@ -112,9 +112,36 @@ Start executing the predictions by running the Python scripts.
 CMD ["npm", "start"]
 ```
 
-Finally, start the application by running it in the Node.js environment.
+Now we will build the docker image and then upload it on the docker hub repository
+
+Same the docker file of the frontend will look like this
+
+![Docker frontend code](./images/image3.png)
+
+```Command
+docker build -t 21bcp275_backend .
+```
+
+![Docker build backend](./images/image1.png)
+
+```bash
+docker tag 21bcp275_backend priyankvaidya/21bcp275priyank:latest
+```
+
+Next step is to push to the docker hub
+
+```bash
+docker push priyankvaidya/21bcp275priyank:latest
+```
+Now finding all of the docker images on our local system
+
+```bash
+docker images
+```
+![Docker images](./images/image2.png)
 
 # Docker-compose.yml
+
 
 
 The Docker Compose file specifies the configuration for running interdependent containers.
