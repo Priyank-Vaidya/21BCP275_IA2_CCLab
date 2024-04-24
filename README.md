@@ -1,112 +1,212 @@
-# Docker File explaination
+Sure, I can format and expand the Dockerfile explanation to make it more organized and clear. Here's the revised version:
 
-The starting of the dockerfile specifies the author name and the dockerfile version
+```markdown
+# Docker File Explanation
 
-`FROM node:18.16.0 `\
-`FROM python:3.8-slim`
+The Dockerfile specifies the instructions to build an image for running our application inside a container.
 
-These are the image distributions along with their versions which will be used for executing our application inside the container. 
+### Base Image Selection
 
-`WORKDIR /backend`
+The starting of the Dockerfile specifies the author name and the Dockerfile version.
 
-With this command we are setting the working directory as the backend, which basically specifies the reference directory and files from /backend directory level in the container file system.
+```Dockerfile
+FROM node:18.16.0
+FROM python:3.8-slim
+```
 
-`RUN apt-get update && apt-get upgrade -y && \` \
-    `npm `
+These are the image distributions along with their versions which will be used for executing our application inside the container.
 
-Command used in linux to update the system after package installation as done at the first step.
+### Setting Working Directory
 
-## First stage of installation
+```Dockerfile
+WORKDIR /backend
+```
 
-`COPY package*.json ./`\
-`RUN npm install` 
+With this command, we are setting the working directory as the backend, which specifies the reference directory and files from the `/backend` directory level in the container file system.
 
-Firstly this copies the server package.json dependancy file. We aim to first download all the necessary dependancies and then coping entire codebase to run the application in container
+### Updating System and Installing Dependencies
 
-`COPY . .`
+```Dockerfile
+RUN apt-get update && apt-get upgrade -y && \
+    npm
+```
 
-This copies all the files from the home directory to the container directory i.e /backend
+This command updates the system after package installation, as done in the first step.
 
+### First Stage of Installation
 
-## Second stage of installation and configuration
+```Dockerfile
+COPY package*.json ./
+RUN npm install
+```
 
-`WORKDIR /backend/ml_model`
+Firstly, this copies the server `package.json` dependency file. We aim to first download all the necessary dependencies and then copy the entire codebase to run the application in the container.
 
-Setting the working directory in the container file system 1 layer below of /backend for ml_model
+```Dockerfile
+COPY . .
+```
 
-`COPY ./ml_model/requirements.txt .`
+This copies all the files from the home directory to the container directory i.e `/backend`.
 
-First argument after COPY specifies the relative path of your local application and the one after it denotes the relative path with reference to the WORKDIR
+### Second Stage of Installation and Configuration
 
-Copying only the requirements first
+```Dockerfile
+WORKDIR /backend/ml_model
+COPY ./ml_model/requirements.txt .
+```
 
-This command will copy the contents of ml_model directory to the container /backend/ml_model directory
+Setting the working directory in the container file system 1 layer below of `/backend` for `ml_model`. Copying only the requirements first. This command will copy the contents of `ml_model` directory to the container `/backend/ml_model` directory.
 
-`RUN pip install -r requirements.txt `
+```Dockerfile
+RUN pip install -r requirements.txt
+```
 
-Installing all the requirements for running the python application
+Installing all the requirements for running the Python application.
 
+```Dockerfile
+COPY ./ml_model ./backend/ml_model
+```
 
-`COPY ./ml_model ./backend/ml_model`
+Copying all the code in the `ml_model` local directory to the container directory.
 
-Copying all the code in the ml_model local directory to the container directory
+```Dockerfile
+COPY ./configure-cloudsql-password.sh ../scripts
+```
 
-`COPY ./configure-cloudsql-password.sh ../scripts`
+In order to configure the password for Cloud SQL for storing the predictions of `ml_model`, I have written the bash file for performing and configuring the Google Cloud Cloud SQL. This copies the bash file into the `/scripts` directory at the `/backend` level.
 
-In order to configure the password for cloudsql for storing the predictions of ml_model, I have written the bash file for performing and configuring the Google Cloud cloudsql.
+### Environment Variables Configuration
 
-This copies the bash file into the /scripts directory at the /backend level
+```Dockerfile
+ENV GOOGLE_CLOUD_PROJECT ${GOOGLE_CLOUD_PROJECT}
+ENV GOOGLE_CLOUD_SQL_USERNAME ${GOOGLE_CLOUD_SQL_USERNAME}
+ENV GOOGLE_CLOUD_SQL_PASSWORD ${GOOGLE_CLOUD_SQL_PASSWORD}
+ENV GOOGLE_CLOUD_SQL_DATABASE ${GOOGLE_CLOUD_SQL_DATABASE}
+ENV GOOGLE_CLOUD_SQL_HOST ${GOOGLE_CLOUD_SQL_HOST}
+ENV GOOGLE_CLOUD_SQL_PORT ${GOOGLE_CLOUD_SQL_PORT}
+```
 
-`ENV GOOGLE_CLOUD_PROJECT ${GOOGLE_CLOUD_PROJECT}` \
-`ENV GOOGLE_CLOUD_SQL_USERNAME ${GOOGLE_CLOUD_SQL_USERNAME}`\
-`ENV GOOGLE_CLOUD_SQL_PASSWORD ${GOOGLE_CLOUD_SQL_PASSWORD}`\
-`ENV GOOGLE_CLOUD_SQL_DATABASE ${GOOGLE_CLOUD_SQL_DATABASE}`\
-`ENV GOOGLE_CLOUD_SQL_HOST ${GOOGLE_CLOUD_SQL_HOST}`\
-`ENV GOOGLE_CLOUD_SQL_PORT ${GOOGLE_CLOUD_SQL_PORT}`
+As you see, the environment variables specified after `${}` needs to be configured by the automated workflow while initializing the VM on which the application needs to be run. Here VM is an abbreviation of the Linux system on which the containers are executed.
 
+### Running Python Script and Exposing Ports
 
-As you see that environments specified after {$} needs to be configured by the automated workflow while initializing the VM on which  the application needs to be run. 
+```Dockerfile
+RUN python3 db.py
+```
 
-Here VM is an abbreviation of linux system on which the containers are executed 
+Running the `db.py` file for using the Cloud SQL.
 
-`RUN python3 db.py`
+```Dockerfile
+EXPOSE 3000
+```
 
-Running the db.py file for using the cloudsql 
+Exposing container port 3000 for open traffic to access the application.
 
-`EXPOSE 3000`
+```Dockerfile
+CMD ["python3", "stock_market_prediction.py"]
+```
 
-Exposing container port 3000 for open traffic to access the application
+Start executing the predictions by running the Python scripts.
 
-`CMD ["python3", "stock_market_prediction.py"]`
+```Dockerfile
+CMD ["npm", "start"]
+```
 
-Start executing the predictions by running the python scripts
-
-`CMD ["npm", "start"]`
-
-Finally start the application by running it in node environment
-
-
+Finally, start the application by running it in the Node.js environment.
 
 # Docker-compose.yml
 
-There are 3 services for running interdependent containers \
-db \
-app \
-psql \
+
+The Docker Compose file specifies the configuration for running interdependent containers.
 
 ### db 
-It uses the postgres public image from docker registery and run the necessary configuration set up from configuration-postgres.sh bash file 
 
-There are some other parameters eg data path, volume, bridge
+It uses the Postgres public image from the Docker registry and runs the necessary configuration set up from `configuration-postgres.sh` bash file.
+
+There are some other parameters e.g. data path, volume, bridge.
 
 ### app
 
-Uses the dockerfile as it's dependancy on executing application
-it depends on db services
-is connected to same network as the db i.e bridge
+Uses the Dockerfile as its dependency on executing application. It depends on the db services and is connected to the same network as the db, i.e. bridge.
 
 ### psql 
 
-depends on db service
-connected to same network for execution
- 
+Depends on db service and connected to the same network for execution.
+```
+
+This structured explanation provides a clear understanding of the Dockerfile and Docker Compose configuration. Each section is broken down into smaller parts with explanations, making it easier to follow and comprehend.
+
+Here's the explanation of the provided docker-compose.yml, formatted line by line:
+
+```yaml
+version: '3'
+
+# Services: 
+  # db
+  # app
+  # psql-command
+
+services:
+  # Configuration for the 'db' service
+  db:
+    image: postgres:latest  # Use the latest version of the Postgres image from Docker Hub
+    restart: always  # Restart the container automatically if it exits
+    env_file:  # Load environment variables from a file named .env
+      - .env
+    volumes:  # Mount the local ./data directory to /var/lib/postgresql/data in the container
+      - ./data:/var/lib/postgresql/data
+    networks:  # Connect the container to the 'bridge' network
+      - bridge
+
+  # Configuration for the 'app' service
+  app:
+    build:  # Build the Docker image using the Dockerfile in the current directory
+      context: .
+      dockerfile: dockerfile
+    restart: always  # Restart the container automatically if it exits
+    ports:  # Map port 3000 on the host to port 3000 on the container
+      - "3000:3000"
+    depends_on:  # Wait for the 'db' service to be ready before starting this service
+      - db
+    env_file:  # Load environment variables from a file named .env
+      - .env
+    networks:  # Connect the container to the 'bridge' network
+      - bridge
+
+  # Configuration for the 'psql-command' service
+  psql-command:
+    image: postgres:latest  # Use the latest version of the Postgres image from Docker Hub
+    restart: always  # Restart the container automatically if it exits
+    depends_on:  # Wait for the 'db' service to be ready before starting this service
+      - db
+    networks:  # Connect the container to the 'bridge' network
+      - bridge
+      
+networks:
+  bridge:
+    driver: bridge  # Use the 'bridge' network driver
+```
+
+Explanation:
+
+- The `version: '3'` specifies the Docker Compose file format version being used.
+- Under `services:`, configuration for each service is defined.
+- For the `db` service:
+  - `image: postgres:latest` specifies to use the latest version of the Postgres image from Docker Hub.
+  - `restart: always` ensures that the container restarts automatically if it exits.
+  - `env_file:` loads environment variables from a file named `.env`.
+  - `volumes:` mounts the local `./data` directory to `/var/lib/postgresql/data` in the container.
+  - `networks:` connects the container to the `bridge` network.
+- For the `app` service:
+  - `build:` specifies to build the Docker image using the Dockerfile in the current directory.
+  - `restart: always` ensures that the container restarts automatically if it exits.
+  - `ports:` maps port 3000 on the host to port 3000 on the container.
+  - `depends_on:` specifies to wait for the `db` service to be ready before starting this service.
+  - `env_file:` loads environment variables from a file named `.env`.
+  - `networks:` connects the container to the `bridge` network.
+- For the `psql-command` service:
+  - `image: postgres:latest` specifies to use the latest version of the Postgres image from Docker Hub.
+  - `restart: always` ensures that the container restarts automatically if it exits.
+  - `depends_on:` specifies to wait for the `db` service to be ready before starting this service.
+  - `networks:` connects the container to the `bridge` network.
+- Under `networks:`, the `bridge` network is defined with the `bridge` network driver.
